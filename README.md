@@ -131,4 +131,16 @@ typedef struct {
 This way you don't have to rely on Null terminators.  
 It's also much faster to get the length.
 
+This way you can also create string slices without having to
+copy memory.
 
+### Index and Pointers
+
+If you have a lot of data in an array, don't use
+pointers to reference data in the array.  
+Use indexes. This makes it easier to serialize data
+and resize an array without creating dangling pointers.
+
+### Arenas
+
+Use arenas for memory management.
