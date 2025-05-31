@@ -12,7 +12,7 @@ Place where I put my useful C files
 Use c99 and up.  
 C89 has some cumbersome syntax.
 
-### stint.h
+### stdint.h
 
 Use the stdint.h for the int variables.  
 eg: `int8_t`, `uint8_t`  
