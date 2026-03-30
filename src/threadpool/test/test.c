@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #define PQD_THREADPOOL_IMPLEMENTATION
 #include "pqd_threadpool.h"
@@ -32,6 +33,14 @@ void test_int_isnot(int is, int not, char *msg){
     }
 }
 
+void test_addr_not_null(void *ptr, char *msg){
+    if(ptr == NULL){
+        print_error(msg);
+    } else {
+        print_success(msg);
+    }
+}
+
 /**
  * Test the init of the thread pool
  */
@@ -53,8 +62,8 @@ void test_tp_init(){
     test_int_is(pool.queued, 0, "pool.queued == 0");
     test_int_is(pool.task_amount, 20, "pool.task_amount == 20");
     test_int_is(pool.thread_amount, 10, "pool.thread_amount == 10");
-    test_int_isnot(pool.threads, NULL, "pool.threads != NULL");
-    test_int_isnot(pool.task_queue, NULL, "pool.task_queue != NULL");
+    test_addr_not_null(pool.threads, "pool.threads != NULL");
+    test_addr_not_null(pool.task_queue, "pool.task_queue != NULL");
 
     tp_destroy(&pool);
 }
