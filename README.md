@@ -1,5 +1,5 @@
 
-# c
+# C
 
 Place where I put my useful C files
 
@@ -12,7 +12,7 @@ Place where I put my useful C files
 Use c99 and up.  
 C89 has some cumbersome syntax.
 
-### stint.h
+### stdint.h
 
 Use the stdint.h for the int variables.  
 eg: `int8_t`, `uint8_t`  
@@ -45,7 +45,7 @@ Point point = { 25, 42 };
 pushPoint(point);
 
 // compound way
-puShPoint((Point) {25, 42});
+pushPoint((Point) {25, 42});
 ```
 
 ### compiler flags
@@ -54,13 +54,12 @@ Compiler flags are good. Use them.
 
 `gcc -std=c99 -Wall -Werror -fsanitize=address`  
 
-| flag     | meaning                                   |
-|----------|-------------------------------------------|
-| -std=c99 | set the standard to the one you are using |
-| -Wall    | enable all warnings                       |
-| -Werror  | treat all warnings as errors.             |
-|-fsanitize=address | use the [ASan](#asan) |
-
+| flag              | meaning                                   |
+|-------------------|-------------------------------------------|
+| -std=c99          | set the standard to the one you are using |
+| -Wall             | enable all warnings                       |
+| -Werror           | treat all warnings as errors.             |
+|-fsanitize=address | use the [ASan](#asan)                     |
 
 ### build
 
