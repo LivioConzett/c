@@ -276,6 +276,8 @@ int8_t tp_add_task(tp_pool_t *pool, void (*function)(void*), void *arg){
     }
 
     if(pthread_mutex_unlock(&(pool->lock)) != 0) return 5;
+
+    return 0;
 }
 
 #endif // PQD_THREADPOOL_IMPLEMENTATION
