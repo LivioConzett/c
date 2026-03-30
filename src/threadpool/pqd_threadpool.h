@@ -165,7 +165,7 @@ int8_t tp_init(uint16_t thread_amount, uint16_t task_amount, tp_pool_t *pool){
     }
 
     // allocate the memory for the threads
-    pool->threads = (pthread_t *) malloc(thread_amount * sizeof(pthread_t));
+    pool->threads = (pthread_t *)malloc(thread_amount * sizeof(pthread_t));
     if(pool->threads == NULL){
         pthread_mutex_destroy(&(pool->lock));
         pthread_cond_destroy(&(pool->notify));
@@ -173,8 +173,8 @@ int8_t tp_init(uint16_t thread_amount, uint16_t task_amount, tp_pool_t *pool){
     }
 
     // allocate the memory for the task queue
-    pool->task_queue = (tp_task_t *) malloc(task_amount * sizeof(tp_task_t));
-    if(pool->task_queue = NULL){
+    pool->task_queue = (tp_task_t *)malloc(task_amount * sizeof(tp_task_t));
+    if(pool->task_queue == NULL){
         free(pool->threads);
         pool->threads = NULL;
         pthread_mutex_destroy(&(pool->lock));
@@ -218,35 +218,36 @@ int8_t tp_init(uint16_t thread_amount, uint16_t task_amount, tp_pool_t *pool){
  */
 int8_t tp_destroy(tp_pool_t* pool) {
 
+    // check the input
+    if(pool == NULL) return 1;
+
     // get the mutex for the pool
-    if(pthread_mutex_lock(&(pool->lock)) != 0) return 1;
+    if(pthread_mutex_lock(&(pool->lock)) != 0) return 2;
 
     // set the sopt bit. The threads will stop when
     // this is set.
     pool->stop = 1;
     
     // broadcast the notify to awaken all the waiting threads
-    if(pthread_cond_broadcast(&(pool->notify)) != 0) return 2;
+    if(pthread_cond_broadcast(&(pool->notify)) != 0) return 3;
     // unlock the pool again.
-    if(pthread_mutex_unlock(&(pool->lock)) != 0) return 3;
+    if(pthread_mutex_unlock(&(pool->lock)) != 0) return 4;
 
     // wait for all the threads to join
     for (uint16_t i = 0; i < pool->thread_amount; i++) {
-        if(pthread_join(pool->threads[i], NULL) != 0) return 4;
+        if(pthread_join(pool->threads[i], NULL) != 0) return 5;
     }
 
     // destroy the mutex for the pool
-    if(pthread_mutex_destroy(&(pool->lock)) != 0) return 5;
+    if(pthread_mutex_destroy(&(pool->lock)) != 0) return 6;
     // destroy the notify condition
-    if(pthread_cond_destroy(&(pool->notify)) != 0) return 6;
+    if(pthread_cond_destroy(&(pool->notify)) != 0) return 7;
 
     // free the allocated memory
-    free(pool->task_queue);
-    pool->task_queue = NULL;
+    //free(pool->task_queue);
+    //pool->task_queue = NULL;
     free(pool->threads);
     pool->threads = NULL;
-
-    pool = NULL;
 
     return 0;
 }
@@ -256,26 +257,31 @@ int8_t tp_destroy(tp_pool_t* pool) {
  */
 int8_t tp_add_task(tp_pool_t *pool, void (*function)(void*), void *arg){
     
-    if(pthread_mutex_lock(&(pool->lock)) != 0) return 1;
+    if(pool == NULL) return 1;
+    if(function == NULL) return 2;
+
+    if(pthread_mutex_lock(&(pool->lock)) != 0) return 3;
 
     int next_rear = (pool->queue_back + 1) % pool->task_amount;
     if(pool->queued < pool->task_amount){
+
         pool->task_queue[pool->queue_back].function = function;
         pool->task_queue[pool->queue_back].arg = arg;
         pool->queue_back = next_rear;
         pool->queued++;
+
         if(pthread_cond_signal(&(pool->notify)) != 0){
             // remove the task again
             pool->queue_back = (pool->queue_back - 1) % pool->task_amount;
             pool->queued--;
-            if(pthread_mutex_unlock(&(pool->lock)) != 0) return 3;
-            return 2;
+            if(pthread_mutex_unlock(&(pool->lock)) != 0) return 5;
+            return 4;
         }
     } else {
-        return 4;
+        return 6;
     }
 
-    if(pthread_mutex_unlock(&(pool->lock)) != 0) return 5;
+    if(pthread_mutex_unlock(&(pool->lock)) != 0) return 7;
 
     return 0;
 }

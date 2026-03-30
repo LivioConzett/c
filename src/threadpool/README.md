@@ -104,12 +104,13 @@ Destroys a threadpool. Will stop all the threads and free all the memory.
 | number | meaning                                                                  |
 |--------|--------------------------------------------------------------------------|
 | 0      | success                                                                  |
-| 1      | `pthread_mutex_lock()` failed while locking the `tp_pool_t.lock`         |
-| 2      | `pthread_cond_broadcast()` failed while notifying the `tp_pool_t.notify` |
-| 3      | `pthread_mutex_unlock()` failed while unlocking the `tp_pool_t.lock`     |
-| 4      | `pthread_join()` failed while joining the threads                        |
-| 5      | `pthread_mutex_destroy()` failed while destroying the `tp_pool_t.lock`   |
-| 6      | `pthread_cond_destroy()` failed while destroying the `tp_pool_t.notify`  |
+| 1      | param `pool` is NULL                                                     |
+| 2      | `pthread_mutex_lock()` failed while locking the `tp_pool_t.lock`         |
+| 3      | `pthread_cond_broadcast()` failed while notifying the `tp_pool_t.notify` |
+| 4      | `pthread_mutex_unlock()` failed while unlocking the `tp_pool_t.lock`     |
+| 5      | `pthread_join()` failed while joining the threads                        |
+| 6      | `pthread_mutex_destroy()` failed while destroying the `tp_pool_t.lock`   |
+| 7      | `pthread_cond_destroy()` failed while destroying the `tp_pool_t.notify`  |
 
 ### tp_add_task
 
@@ -138,8 +139,10 @@ Adds a task to the task queue.
 | number | meaning                                                                                                                    |
 |--------|----------------------------------------------------------------------------------------------------------------------------|
 | 0      | success                                                                                                                    |
-| 1      | `pthread_mutex_lock()` failed while locking the `tp_pool_t.lock`                                                           |
-| 2      | `pthread_cond_signal()` failed while notifying the `tp_pool_t.notify`                                                      |
-| 3      | `pthread_mutex_unlock()` failed while unlocking `tp_pool_t.lock` while cleaning up after the `pthread_cond_signal()` error |
-| 4      | `tp_pool_t.task_queue` is momentarily full                                                                                 |
-| 5      | `pthread_mutex_unlock()` failed while unlocking the `tp_pool_t.lock`                                                       |
+| 1      | param `pool` is NULL                                                                                                       |
+| 2      | param `function` is NULL                                                                                                   |
+| 3      | `pthread_mutex_lock()` failed while locking the `tp_pool_t.lock`                                                           |
+| 4      | `pthread_cond_signal()` failed while notifying the `tp_pool_t.notify`                                                      |
+| 5      | `pthread_mutex_unlock()` failed while unlocking `tp_pool_t.lock` while cleaning up after the `pthread_cond_signal()` error |
+| 6      | `tp_pool_t.task_queue` is momentarily full                                                                                 |
+| 7      | `pthread_mutex_unlock()` failed while unlocking the `tp_pool_t.lock`                                                       |
