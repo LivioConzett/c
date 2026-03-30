@@ -32,7 +32,9 @@ void test_int_isnot(int is, int not, char *msg){
     }
 }
 
-
+/**
+ * Test the init of the thread pool
+ */
 void test_tp_init(){
 
     printf("Testing tp_init\n");
@@ -51,6 +53,8 @@ void test_tp_init(){
     test_int_is(pool.queued, 0, "pool.queued == 0");
     test_int_is(pool.task_amount, 20, "pool.task_amount == 20");
     test_int_is(pool.thread_amount, 10, "pool.thread_amount == 10");
+    test_int_isnot(pool.threads, NULL, "pool.threads != NULL");
+    test_int_isnot(pool.task_queue, NULL, "pool.task_queue != NULL");
 
     tp_destroy(&pool);
 }
@@ -60,13 +64,13 @@ int test_number[10];
 
 void test_function(void* arg){
     int index = *(int*)arg;
-
     test_number[index] = index;
-    
     free(arg);
 }
 
-
+/**
+ * Test adding fo tasks
+ */
 void test_task_adding(){
 
     printf("Testing adding tasks\n");
@@ -91,30 +95,16 @@ void test_task_adding(){
     tp_destroy(&pool);
 }
 
-typedef struct{
-    void (*function)(void* arg);
-    void *arg;
-} fn_t;
 
-typedef struct{
-    fn_t *fns;
-    int i;
-} test_t;
-
-
+/**
+ * Main function
+ */
 int main(){
 
     printf("Starting test for threadpool\n");
 
-    // test_tp_init();
+    test_tp_init();
     test_task_adding();
-
-    // test_t *test = (test_t*)malloc(sizeof(test_t));
-
-    // test->fns = (fn_t*)malloc(10 * sizeof(fn_t));
-    // test->i = 1;
-    // test->fns[test->i].function = test_function;
-
 
     return 0;
 }
