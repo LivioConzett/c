@@ -40,6 +40,8 @@ typedef struct {
 
 int8_t tp_init(uint16_t thread_amount, uint16_t task_amount, tp_pool_t *pool);
 int8_t tp_destroy(tp_pool_t* pool);
+int8_t tp_add_task(tp_pool_t *pool, void (*function)(void*), void *arg);
+
 
 ```
 
@@ -108,3 +110,36 @@ Destroys a threadpool. Will stop all the threads and free all the memory.
 | 4      | `pthread_join()` failed while joining the threads                        |
 | 5      | `pthread_mutex_destroy()` failed while destroying the `tp_pool_t.lock`   |
 | 6      | `pthread_cond_destroy()` failed while destroying the `tp_pool_t.notify`  |
+
+### tp_add_task
+
+```C
+int8_t tp_add_task(
+                    tp_pool_t *pool,
+                    void (*function)(void*),
+                    void *arg
+                  );
+```
+
+#### Brief
+
+Adds a task to the task queue.
+
+#### Params
+
+| param         | meaning                          |
+|---------------|----------------------------------|
+| pool          | thread pool to add task to       |
+| function      | function the task should execute |
+| arg           | arguments for the function       |
+
+#### Return
+
+| number | meaning                                                                                                                    |
+|--------|----------------------------------------------------------------------------------------------------------------------------|
+| 0      | success                                                                                                                    |
+| 1      | `pthread_mutex_lock()` failed while locking the `tp_pool_t.lock`                                                           |
+| 2      | `pthread_cond_signal()` failed while notifying the `tp_pool_t.notify`                                                      |
+| 3      | `pthread_mutex_unlock()` failed while unlocking `tp_pool_t.lock` while cleaning up after the `pthread_cond_signal()` error |
+| 4      | `tp_pool_t.task_queue` is momentarily full                                                                                 |
+| 5      | `pthread_mutex_unlock()` failed while unlocking the `tp_pool_t.lock`                                                       |
