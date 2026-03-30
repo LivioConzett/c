@@ -58,7 +58,6 @@ typedef struct {
 // Function declarations
 // -----------------------------------------------------------------------------------
 
-
 /**
  * \brief Create and initialize the threadpool
  * \param thread_amount amount of threads to create
@@ -69,20 +68,27 @@ typedef struct {
 int8_t tp_init(uint16_t thread_amount, uint16_t task_amount, tp_pool_t *pool);
 
 /**
- * \brief destroy a threadpool. Will stop all the threads and free all the memory
+ * \brief Destroy a threadpool. Will stop all the threads and free all the memory
  * \param pool threadpool to destroy
  * \return 0 on success
  */
 int8_t tp_destroy(tp_pool_t* pool);
 
+/**
+ * \brief Adds a task to the queue
+ * \param pool thread pool to add the task too
+ * \param function function to add to the task
+ * \param arg argument for the function
+ * \return 0 on success
+ */
+int8_t tp_add_task(tp_pool_t *pool, void (*function)(void*), void *arg);
 
 
-
-// #ifdef PQD_THREADPOOL_IMPLEMENTATION
 // -----------------------------------------------------------------------------------
 // function definition
 // -----------------------------------------------------------------------------------
 
+#ifdef PQD_THREADPOOL_IMPLEMENTATION
 
 /**
  * \brief handles a single thread. Waits for the notify condition, before grabbing a task
@@ -245,32 +251,32 @@ int8_t tp_destroy(tp_pool_t* pool) {
     return 0;
 }
 
+/**
+ * See function declaration
+ */
+int8_t tp_add_task(tp_pool_t *pool, void (*function)(void*), void *arg){
+    
+    if(pthread_mutex_lock(&(pool->lock)) != 0) return 1;
 
-
-
-
-
-
-
-
-
-
-void threadpool_add_task(threadpool_t *pool, void (*function)(void*), void *arg){
-    pthread_mutex_lock(&(pool->lock));
-
-    int next_rear = (pool->queue_back + 1) % QUEUE_SIZE;
-    if(pool->queued < QUEUE_SIZE){
-        pool->task_queue[pool->queue_back].fn = function;
+    int next_rear = (pool->queue_back + 1) % pool->task_amount;
+    if(pool->queued < pool->task_amount){
+        pool->task_queue[pool->queue_back].function = function;
         pool->task_queue[pool->queue_back].arg = arg;
         pool->queue_back = next_rear;
         pool->queued++;
-        pthread_cond_signal(&(pool->notify));
+        if(pthread_cond_signal(&(pool->notify)) != 0){
+            // remove the task again
+            pool->queue_back = (pool->queue_back - 1) % pool->task_amount;
+            pool->queued--;
+            if(pthread_mutex_unlock(&(pool->lock)) != 0) return 3;
+            return 2;
+        }
     } else {
-        printf("Task queue is full! Cannot add more tasks.\n");
+        return 4;
     }
 
-    pthread_mutex_unlock(&(pool->lock));
+    if(pthread_mutex_unlock(&(pool->lock)) != 0) return 5;
 }
-#endif // PQD_THREADPOOL_IMPLEMENTATION
 
+#endif // PQD_THREADPOOL_IMPLEMENTATION
 #endif // PQD_THREADPOOL_H 
