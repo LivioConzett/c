@@ -17,6 +17,61 @@ int main(){
 }
 ```
 
+Adding some tasks to a thread pool:
+
+```C
+#include <stdio.h>
+#include <unistd.h>
+
+#define PQD_THREADPOOL_IMPLEMENTATION
+#include "pqd_threadpool.h"
+
+#define TASK_AMOUNT 10
+#define THREAD_AMOUNT 3
+
+// array for the task to write into
+int task_numbers[TASK_AMOUNT];
+
+/**
+ * Function to run as task
+ */
+void task_function(void* arg){
+    int index = *(int*)arg;
+    test_number[index] = index;
+    free(arg);
+}
+
+/**
+ * Main function
+ */
+int main(){
+
+  // create the threadpool
+  tp_pool_t pool;
+
+  // init the threadpool
+  tp_init(THREAD_AMOUNT, TASK_AMOUNT, &pool);
+
+  // create the tasks
+  for(int i = 0; i < TASK_AMOUNT; i++){
+
+      int *num = (int *)malloc(sizeof(int));
+      *num = i;
+
+      // add the tasks to the 
+      tp_add_task(&pool, test_function, (void *)num);
+  }
+
+  // wait for all the task to finish
+  tp_wait_for_tasks_done(&pool);
+
+  // destroy the thread pool
+  tp_destroy(&pool);
+
+  return 0;
+}
+```
+
 ### declarations
 
 ``` C
@@ -151,7 +206,7 @@ Adds a task to the task queue.
 | 6      | `tp_pool_t.task_queue` is momentarily full                                                                                 |
 | 7      | `pthread_mutex_unlock()` failed while unlocking the `tp_pool_t.lock`                                                       |
 
-### int8_t tp_wait_for_tasks_done
+### tp_wait_for_tasks_done
 
 ```C
 int8_t tp_wait_for_tasks_done(
@@ -162,8 +217,8 @@ int8_t tp_wait_for_tasks_done(
 
 #### Brief
 
-Blocks and waits for all the tasks currently in the `task_queue` to be done. Technically it counts all the
-threads that are idle. If all the allocated threads are idle, all the tasks must be done.
+Blocks and waits for all the tasks currently in the `task_queue` to be done. Technically it checks if all
+the threads are idle and no more tasks are queued. If that is the case, then all the tasks must be done.
 
 #### Params
 

@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <assert.h>
 #include <pthread.h>
 #include <unistd.h>
 
@@ -21,6 +20,7 @@ void test_int_is(int is, int expected, char *msg){
         print_success(msg);
     } else {
         print_error(msg);
+        printf("     is %d. Should be %d\n", is, expected);
     }
 }
 
@@ -67,6 +67,9 @@ void test_tp_init(){
 
     tp_destroy(&pool);
 }
+
+
+
 
 #define TASK_AMOUNT 10
 
@@ -145,6 +148,8 @@ void test_task_done(){
         test_int_is(test_number[i], i, "number test");
     }
 
+    printf("adding again\n");
+
     clear_number_array();
 
     for(int i = 0; i < TASK_AMOUNT; i++){
@@ -154,8 +159,6 @@ void test_task_done(){
 
         tp_add_task(&pool, test_function, (void *)num);
     }
-
-    printf("adding again\n");
 
     tp_wait_for_tasks_done(&pool);
 

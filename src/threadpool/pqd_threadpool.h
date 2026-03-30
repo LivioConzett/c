@@ -118,8 +118,8 @@ void* tp_thread_handler(void* threadpool) {
         // increment the idle threads
         pool->idle_threads++;
 
-        // all threads are idle
-        if(pool->idle_threads == pool->thread_amount){
+        // all threads are idle and no more task are queued
+        if(pool->idle_threads == pool->thread_amount && pool->queued == 0){
             // signal that the threads are idle (all tasks done)
             ret = pthread_cond_signal(&(pool->done));
             if(ret != 0){
@@ -416,8 +416,8 @@ int8_t tp_wait_for_tasks_done(tp_pool_t *pool){
         return 2;
     }
 
-    // if all the threads are idle, all the tasks must be done
-    if(pool->idle_threads == pool->thread_amount){
+    // if all the threads are idle, and no task queued, all task must be done
+    if(pool->idle_threads == pool->thread_amount && pool->queued == 0){
         // unlock the mutex
         ret = pthread_mutex_unlock(&(pool->lock));
         if(ret != 0){
