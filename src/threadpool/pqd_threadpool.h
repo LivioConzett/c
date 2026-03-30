@@ -75,7 +75,6 @@ int8_t tp_init(uint16_t thread_amount, uint16_t task_amount, tp_pool_t *pool);
  */
 int8_t tp_destroy(tp_pool_t* pool);
 
-// void threadpool_add_task(threadpool_t* pool, void (*function)(void*), void* arg);
 
 
 
@@ -85,30 +84,49 @@ int8_t tp_destroy(tp_pool_t* pool);
 // -----------------------------------------------------------------------------------
 
 
-
-void* thread_function(void* threadpool) {
-    threadpool_t* pool = (threadpool_t*)threadpool;
-    printf("starting thread\n");
+/**
+ * \brief handles a single thread. Waits for the notify condition, before grabbing a task
+ * \param pool threadpool to get the tasks from
+ */
+void* tp_thread_handler(void* threadpool) {
+    tp_pool_t* pool = (tp_pool_t*)threadpool;
 
     while (1) {
-        pthread_mutex_lock(&(pool->lock));
-
-        while (pool->queued == 0 && !pool->stop) {
-            pthread_cond_wait(&(pool->notify), &(pool->lock));
-        }
-
-        if (pool->stop) {
-            pthread_mutex_unlock(&(pool->lock));
+        // lock the pool in order to access the task queue
+        if(pthread_mutex_lock(&(pool->lock)) != 0){
+            fprintf(stderr, "ERROR in thread: mutex lock failed!\n");
             pthread_exit(NULL);
         }
 
-        task_t task = pool->task_queue[pool->queue_front];
-        pool->queue_front = (pool->queue_front + 1) % QUEUE_SIZE;
+        // while there is no task to do, wait for one
+        while (pool->queued == 0 && !pool->stop) {
+            if(pthread_cond_wait(&(pool->notify), &(pool->lock)) != 0){
+                fprintf(stderr, "ERROR in thread: condition wait failed!\n");
+                pthread_exit(NULL);
+            }
+        }
+
+        // if the thread should stop
+        if (pool->stop) {
+            if(pthread_mutex_unlock(&(pool->lock)) != 0){
+                fprintf(stderr, "ERROR in thread: mutex unlock failed on stop!\n");
+            }
+            pthread_exit(NULL);
+        }
+
+        // get a new task
+        tp_task_t task = pool->task_queue[pool->queue_front];
+        pool->queue_front = (pool->queue_front + 1) % pool->task_amount;
         pool->queued--;
 
-        pthread_mutex_unlock(&(pool->lock));
+        // unlock the mutex, so that other threads can get a task
+        if(pthread_mutex_unlock(&(pool->lock)) != 0){
+            fprintf(stderr, "ERROR in thread: mutex unlock failed!\n");
+            pthread_exit(NULL);
+        }
         
-        (*(task.fn))(task.arg);
+        // execute the task
+        (*(task.function))(task.arg);
     }
 
     return NULL;
@@ -160,10 +178,10 @@ int8_t tp_init(uint16_t thread_amount, uint16_t task_amount, tp_pool_t *pool){
 
     // start the threads
     for(uint16_t i = 0; i < thread_amount; i++){
-        if(pthread_create(&(pool->threads[i]), NULL, thread_function, pool) != 0){
+        if(pthread_create(&(pool->threads[i]), NULL, tp_thread_handler, pool) != 0){
 
             // terminate all the threads that have been started if the creation 
-            // if them fails
+            // of one of them fails
             pthread_mutex_lock(&(pool->lock));
             pool->stop = 1;
             pthread_cond_broadcast(&(pool->notify));
