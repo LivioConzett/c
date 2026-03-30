@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 
-gcc -o test test.c -I..
+gcc -o test.e test.c -I..
 
-./test
+./test.e
