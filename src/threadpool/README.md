@@ -38,7 +38,8 @@ typedef struct {
   uint8_t stop;
 } tp_pool_t;
 
-int8_t tp_init(uint16_t thread_amount, uint16_t task_amount, tp_pool_t *threadpool);
+int8_t tp_init(uint16_t thread_amount, uint16_t task_amount, tp_pool_t *pool);
+int8_t tp_destroy(tp_pool_t* pool);
 
 ```
 
@@ -48,7 +49,7 @@ int8_t tp_init(uint16_t thread_amount, uint16_t task_amount, tp_pool_t *threadpo
 int8_t tp_init(
                 uint16_t thread_amount,
                 uint16_t task_amount,
-                tp_pool_t *threadpool
+                tp_pool_t *pool
               );
 ```
 
@@ -63,7 +64,7 @@ in the `tp_pool_t` structure.
 |---------------|-------------------------------------|
 | thread_amount | amount of threads to create in pool |
 | task_amount   | length of task array to allocate    |
-| threadpool    | thread pool to initialize           |
+| pool          | thread pool to initialize           |
 
 #### Return
 
@@ -71,9 +72,39 @@ in the `tp_pool_t` structure.
 |--------|--------------------------------------------------------------|
 | 0      | success                                                      |
 | 1      | param `thread_amount` or `task_amount` is 0                  |
-| 2      | param `threadpool` is NULL                                   |
+| 2      | param `pool` is NULL                                         |
 | 3      | `pthread_mutex_init()` failed while initializing the `lock`  |
 | 4      | `pthread_cond_init()` failed while initializing the ``notify`|
 | 5      | `threads` malloc failed                                      |
 | 6      | `task_queue` malloc failed                                   |
 | 7      | `pthread_create()` failed while creating a thread            |
+
+### tp_destroy
+
+```C
+int8_t tp_destroy(
+                   tp_pool_t* pool
+                 );
+```
+
+#### Brief
+
+Destroys a threadpool. Will stop all the threads and free all the memory.
+
+#### Params
+
+| param         | meaning                   |
+|---------------|---------------------------|
+| pool          | thread pool to destroy    |
+
+#### Return
+
+| number | meaning                                                                  |
+|--------|--------------------------------------------------------------------------|
+| 0      | success                                                                  |
+| 1      | `pthread_mutex_lock()` failed while locking the `tp_pool_t.lock`         |
+| 2      | `pthread_cond_broadcast()` failed while notifying the `tp_pool_t.notify` |
+| 3      | `pthread_mutex_unlock()` failed while unlocking the `tp_pool_t.lock`     |
+| 4      | `pthread_join()` failed while joining the threads                        |
+| 5      | `pthread_mutex_destroy()` failed while destroying the `tp_pool_t.lock`   |
+| 6      | `pthread_cond_destroy()` failed while destroying the `tp_pool_t.notify`  |
