@@ -28,8 +28,10 @@ typedef struct {
 typedef struct {
   pthread_mutex_t lock;
   pthread_cond_t notify;
+  pthread_cond_t done;
   pthread_t *threads;
   tp_task_t *task_queue;
+  uint16_t idle_threads;
   uint16_t thread_amount;
   uint16_t task_amount;
   uint16_t queued;
@@ -41,7 +43,7 @@ typedef struct {
 int8_t tp_init(uint16_t thread_amount, uint16_t task_amount, tp_pool_t *pool);
 int8_t tp_destroy(tp_pool_t* pool);
 int8_t tp_add_task(tp_pool_t *pool, void (*function)(void*), void *arg);
-
+int8_t tp_wait_for_tasks_done(tp_pool_t *pool);
 
 ```
 
@@ -70,16 +72,17 @@ in the `tp_pool_t` structure.
 
 #### Return
 
-| number | meaning                                                      |
-|--------|--------------------------------------------------------------|
-| 0      | success                                                      |
-| 1      | param `thread_amount` or `task_amount` is 0                  |
-| 2      | param `pool` is NULL                                         |
-| 3      | `pthread_mutex_init()` failed while initializing the `lock`  |
-| 4      | `pthread_cond_init()` failed while initializing the ``notify`|
-| 5      | `threads` malloc failed                                      |
-| 6      | `task_queue` malloc failed                                   |
-| 7      | `pthread_create()` failed while creating a thread            |
+| number | meaning                                                           |
+|--------|-------------------------------------------------------------------|
+| 0      | success                                                           |
+| 1      | param `thread_amount` or `task_amount` is 0                       |
+| 2      | param `pool` is NULL                                              |
+| 3      | `pthread_mutex_init()` failed while initializing the `pool.lock`  |
+| 4      | `pthread_cond_init()` failed while initializing the `pool.notify` |
+| 5      | `pthread_cond_init()` failed while initializing the `pool.done`   |
+| 6      | `threads` malloc failed                                           |
+| 7      | `task_queue` malloc failed                                        |
+| 8      | `pthread_create()` failed while creating a thread                 |
 
 ### tp_destroy
 
@@ -110,7 +113,8 @@ Destroys a threadpool. Will stop all the threads and free all the memory.
 | 4      | `pthread_mutex_unlock()` failed while unlocking the `tp_pool_t.lock`     |
 | 5      | `pthread_join()` failed while joining the threads                        |
 | 6      | `pthread_mutex_destroy()` failed while destroying the `tp_pool_t.lock`   |
-| 7      | `pthread_cond_destroy()` failed while destroying the `tp_pool_t.notify`  |
+| 7      | `pthread_cond_destroy()` failed while destroying the `tp_pool_t.done`    |
+| 8      | `pthread_cond_destroy()` failed while destroying the `tp_pool_t.notify`  |
 
 ### tp_add_task
 
@@ -146,3 +150,33 @@ Adds a task to the task queue.
 | 5      | `pthread_mutex_unlock()` failed while unlocking `tp_pool_t.lock` while cleaning up after the `pthread_cond_signal()` error |
 | 6      | `tp_pool_t.task_queue` is momentarily full                                                                                 |
 | 7      | `pthread_mutex_unlock()` failed while unlocking the `tp_pool_t.lock`                                                       |
+
+### int8_t tp_wait_for_tasks_done
+
+```C
+int8_t tp_wait_for_tasks_done(
+                              tp_pool_t *pool
+                             );
+
+```
+
+#### Brief
+
+Blocks and waits for all the tasks currently in the `task_queue` to be done. Technically it counts all the
+threads that are idle. If all the allocated threads are idle, all the tasks must be done.
+
+#### Params
+
+| param         | meaning                       |
+|---------------|-------------------------------|
+| pool          | thread pool to wait for       |
+
+#### Return
+
+| number | meaning                                                              |
+|--------|----------------------------------------------------------------------|
+| 0      | success                                                              |
+| 1      | param `pool` is NULL                                                 |
+| 2      | `pthread_mutex_lock()` failed while locking the `tp_pool_t.lock`     |
+| 3      | `pthread_cond_wait()` failed while waiting on `tp_pool_t.done`       |
+| 4      | `pthread_mutex_unlock()` failed while unlocking `tp_pool_t.lock`     |

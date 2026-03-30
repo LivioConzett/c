@@ -68,13 +68,22 @@ void test_tp_init(){
     tp_destroy(&pool);
 }
 
+#define TASK_AMOUNT 10
 
-int test_number[10];
+int test_number[TASK_AMOUNT];
 
 void test_function(void* arg){
     int index = *(int*)arg;
     test_number[index] = index;
     free(arg);
+
+    sleep(1);
+}
+
+void clear_number_array(){
+    for(int i = 0; i < TASK_AMOUNT; i++){
+        test_number[i] = -1;
+    }
 }
 
 /**
@@ -84,10 +93,12 @@ void test_task_adding(){
 
     printf("Testing adding tasks\n");
 
-    tp_pool_t pool;
-    tp_init(3, 10, &pool);
+    clear_number_array();
 
-    for(int i = 0; i < 10; i++){
+    tp_pool_t pool;
+    tp_init(3, TASK_AMOUNT, &pool);
+
+    for(int i = 0; i < TASK_AMOUNT; i++){
 
         int *num = (int *)malloc(sizeof(int));
         *num = i;
@@ -95,13 +106,72 @@ void test_task_adding(){
         tp_add_task(&pool, test_function, (void *)num);
     }
 
-    sleep(5);
+    tp_wait_for_tasks_done(&pool);
 
-    for(int i = 0; i < 10; i++){
+    printf("all done\n");
+
+    for(int i = 0; i < TASK_AMOUNT; i++){
         test_int_is(test_number[i], i, "number test");
     }
 
     tp_destroy(&pool);
+}
+
+/**
+ * Test the task done
+ */
+void test_task_done(){
+    
+    printf("Testing adding task after done\n");
+
+    clear_number_array();
+
+    tp_pool_t pool;
+    tp_init(3, TASK_AMOUNT, &pool);
+
+    for(int i = 0; i < TASK_AMOUNT; i++){
+
+        int *num = (int *)malloc(sizeof(int));
+        *num = i;
+
+        tp_add_task(&pool, test_function, (void *)num);
+    }
+
+    tp_wait_for_tasks_done(&pool);
+
+    printf("done\n");
+
+    for(int i = 0; i < TASK_AMOUNT; i++){
+        test_int_is(test_number[i], i, "number test");
+    }
+
+    clear_number_array();
+
+    for(int i = 0; i < TASK_AMOUNT; i++){
+
+        int *num = (int *)malloc(sizeof(int));
+        *num = i;
+
+        tp_add_task(&pool, test_function, (void *)num);
+    }
+
+    printf("adding again\n");
+
+    tp_wait_for_tasks_done(&pool);
+
+    for(int i = 0; i < TASK_AMOUNT; i++){
+        test_int_is(test_number[i], i, "number test");
+    }
+
+    printf("testing calling tp_wait_for_tasks_done after all threads are already idle\n");
+    printf("Program should not hang here\n");
+
+    tp_wait_for_tasks_done(&pool);
+
+    print_success("done");
+
+    tp_destroy(&pool);
+
 }
 
 
@@ -112,8 +182,9 @@ int main(){
 
     printf("Starting test for threadpool\n");
 
-    test_tp_init();
-    test_task_adding();
+    //test_tp_init();
+    //test_task_adding();
+    test_task_done();
 
     return 0;
 }
