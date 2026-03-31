@@ -5,7 +5,7 @@ Place where I put my useful C files
 
 ## Tipes for programming C
 
-[video](https://www.youtube.com/watch?v=9UIIMBqq1D4)
+[CH Tips for C Programming by Nic Barker](https://www.youtube.com/watch?v=9UIIMBqq1D4)
 
 ### version
 
@@ -72,7 +72,10 @@ This way you only need to call one file in the compiler.
 
 ### Debugger
 
-Use a debugger!
+Use a debugger!  
+
+- [GDB The GNU Project Debugger](https://sourceware.org/gdb/)
+- [gf - A GDB Frontend](https://github.com/nakst/gf)
 
 ### ASan
 
@@ -137,7 +140,7 @@ copy memory.
 
 A possibility is to have the struct as a header at the very beginning
 of the array instead of a separate struct.
-[Insane Shadow Data Trick in C](https://www.youtube.com/watch?v=gtk3RZHwJUA)
+[Insane Shadow Data Trick in C by Tsoding](https://www.youtube.com/watch?v=gtk3RZHwJUA)
 
 ```C
 typedef struct{
