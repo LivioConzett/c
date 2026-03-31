@@ -133,6 +133,36 @@ It's also much faster to get the length.
 This way you can also create string slices without having to
 copy memory.
 
+### Shadow data
+
+A possibility is to have the struct as a header at the very beginning
+of the array instead of a separate struct.
+[Insane Shadow Data Trick in C](https://www.youtube.com/watch?v=gtk3RZHwJUA)
+
+```C
+typedef struct{
+    size_t count;
+    size_t capacity;
+} header_t;
+
+// Init the array. Set the header and return 
+// the pointer to the address after the header.
+int *array_init(size_t init_capacity){
+    header_t *header = malloc(sizeof(int) * init_capacity + sizeof(header_t));
+    header->count = 0;
+    header->capacity = init_capacity;
+    return (int*)(header + 1);
+}
+
+// get the header by going back one address 
+// from the array.
+void array_push(int *array, int x){
+    header_t *header = (header_t *)array - 1;
+    array[header->count++] = x;
+}
+
+```
+
 ### Index and Pointers
 
 If you have a lot of data in an array, don't use
