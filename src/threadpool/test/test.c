@@ -46,7 +46,7 @@ void test_addr_not_null(void *ptr, char *msg){
  */
 void test_tp_init(){
 
-    printf("Testing tp_init\n");
+    printf("\n----testing tp_init----\n");
 
     tp_pool_t pool = {0};
     pool.stop = 1;
@@ -69,8 +69,6 @@ void test_tp_init(){
 }
 
 
-
-
 #define TASK_AMOUNT 10
 
 int test_number[TASK_AMOUNT];
@@ -80,6 +78,16 @@ void test_function(void* arg){
     test_number[index] = index;
     free(arg);
 
+    sleep(1);
+}
+
+void test_function_long(void* arg){
+    for(int i = 0; i < INT32_MAX; i++){
+        int num = 1 + 1;
+    }
+}
+
+void test_function_short(void * arg){
     sleep(1);
 }
 
@@ -94,7 +102,7 @@ void clear_number_array(){
  */
 void test_task_adding(){
 
-    printf("Testing adding tasks\n");
+    printf("\n----testing adding tasks----\n");
 
     clear_number_array();
 
@@ -125,7 +133,7 @@ void test_task_adding(){
  */
 void test_task_done(){
     
-    printf("Testing adding task after done\n");
+    printf("\n----testing adding task after done----\n");
 
     clear_number_array();
 
@@ -179,6 +187,40 @@ void test_task_done(){
 
 
 /**
+ * Test adding too many tasks
+ */
+void test_add_too_many_tasks(){
+
+    printf("\n----testing task queue full----\n");
+
+    const int threads = 1;
+    const int tasks = 1;
+
+    tp_pool_t pool;
+    tp_init(threads, tasks, &pool);
+
+    for(int i = 0; i < tasks + 2; i++){
+
+        int ret = 0;
+
+        if(i < tasks){
+            ret = tp_add_task(&pool, test_function_long, NULL);
+            test_int_is(ret, 0, "tp_add_task return");
+        } else {
+            ret = tp_add_task(&pool, test_function_short, NULL);
+            test_int_is(ret, 6, "tp_add_task return when full");
+        }
+
+    }
+
+    tp_wait_for_tasks_done(&pool);
+
+    print_success("done");
+
+    tp_destroy(&pool);
+}
+
+/**
  * Main function
  */
 int main(){
@@ -187,7 +229,8 @@ int main(){
 
     //test_tp_init();
     //test_task_adding();
-    test_task_done();
+    //test_task_done();
+    test_add_too_many_tasks();
 
     return 0;
 }
