@@ -202,39 +202,39 @@ int8_t tp_init(uint16_t thread_amount, uint16_t task_amount, tp_pool_t *pool){
     // initialize the condition
     ret = pthread_cond_init(&(pool->notify), NULL);
     if(ret != 0){
-        pthread_mutex_destroy(&(pool->lock));
         fprintf(stderr, "ERROR: pthread cond init notify failed with code %d!\n", ret);
+        pthread_mutex_destroy(&(pool->lock));
         return 4;
     }
 
     // initialize the condition
     ret = pthread_cond_init(&(pool->done), NULL);
     if(ret != 0){
+        fprintf(stderr, "ERROR: pthread cond init done failed with code %d!\n", ret);
         pthread_mutex_destroy(&(pool->lock));
         pthread_cond_destroy(&(pool->notify));
-        fprintf(stderr, "ERROR: pthread cond init done failed with code %d!\n", ret);
         return 5;
     }
 
     // allocate the memory for the threads
     pool->threads = (pthread_t *)malloc(thread_amount * sizeof(pthread_t));
     if(pool->threads == NULL){
+        fprintf(stderr, "ERROR: Allocating threads array failed!\n");
         pthread_mutex_destroy(&(pool->lock));
         pthread_cond_destroy(&(pool->notify));
         pthread_cond_destroy(&(pool->done));
-        fprintf(stderr, "ERROR: Allocating threads array failed!\n");
         return 6;
     }
 
     // allocate the memory for the task queue
     pool->task_queue = (tp_task_t *)malloc(task_amount * sizeof(tp_task_t));
     if(pool->task_queue == NULL){
+        fprintf(stderr, "ERROR: Allocating task queue failed!\n");
         free(pool->threads);
         pool->threads = NULL;
         pthread_mutex_destroy(&(pool->lock));
         pthread_cond_destroy(&(pool->notify));
         pthread_cond_destroy(&(pool->done));
-        fprintf(stderr, "ERROR: Allocating task queue failed!\n");
         return 7;
     }
 
@@ -242,6 +242,7 @@ int8_t tp_init(uint16_t thread_amount, uint16_t task_amount, tp_pool_t *pool){
     for(uint16_t i = 0; i < thread_amount; i++){
         ret = pthread_create(&(pool->threads[i]), NULL, tp_thread_handler, pool);
         if(ret != 0){
+            fprintf(stderr, "ERROR: pthread create failed with code %d\n", ret);
             // terminate all the threads that have been started if the creation 
             // of one of them fails
             pthread_mutex_lock(&(pool->lock));
@@ -263,7 +264,6 @@ int8_t tp_init(uint16_t thread_amount, uint16_t task_amount, tp_pool_t *pool){
             free(pool->threads);
             pool->threads = NULL;
 
-            fprintf(stderr, "ERROR: pthread create failed with code %d\n", ret);
             return 8;
         }
     }
@@ -437,6 +437,11 @@ int8_t tp_wait_for_tasks_done(tp_pool_t *pool){
     ret = pthread_cond_wait(&(pool->done), &(pool->lock));
     if(ret != 0){
         fprintf(stderr, "ERROR: pthread cond wait failed with code %d\n", ret);
+        ret = pthread_mutex_unlock(&(pool->lock));
+        if(ret != 0){
+            fprintf(stderr, "ERROR: pthread mutex unlock failed with code %d\n", ret);
+            return 5;
+        }
         return 3;
     }
 

@@ -229,10 +229,11 @@ the threads are idle and no more tasks are queued. If that is the case, then all
 
 #### Return
 
-| number | meaning                                                              |
-|--------|----------------------------------------------------------------------|
-| 0      | success                                                              |
-| 1      | param `pool` is NULL                                                 |
-| 2      | `pthread_mutex_lock()` failed while locking the `tp_pool_t.lock`     |
-| 3      | `pthread_cond_wait()` failed while waiting on `tp_pool_t.done`       |
-| 4      | `pthread_mutex_unlock()` failed while unlocking `tp_pool_t.lock`     |
+| number | meaning                                                                                             |
+|--------|-----------------------------------------------------------------------------------------------------|
+| 0      | success                                                                                             |
+| 1      | param `pool` is NULL                                                                                |
+| 2      | `pthread_mutex_lock()` failed while locking the `tp_pool_t.lock`                                    |
+| 3      | `pthread_cond_wait()` failed while waiting on `tp_pool_t.done`                                      |
+| 4      | `pthread_mutex_unlock()` failed while unlocking `tp_pool_t.lock`                                    |
+| 5      | `pthread_mutex_unlock()` failed while unlocking `tp_pool_t.lock` after `pthread_cond_wait()` failed |
