@@ -385,6 +385,12 @@ int8_t tp_add_task(tp_pool_t *pool, void (*function)(void*), void *arg){
             return 4;
         }
     } else {
+        ret = pthread_mutex_unlock(&(pool->lock));
+        if(ret != 0){
+            fprintf(stderr, "ERROR: pthread mutex unlock failed with code %d\n", ret);
+            return 8;
+        }
+
         fprintf(stderr, "ERROR: task queue full\n");
         return 6;
     }

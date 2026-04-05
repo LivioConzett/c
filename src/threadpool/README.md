@@ -205,6 +205,7 @@ Adds a task to the task queue.
 | 5      | `pthread_mutex_unlock()` failed while unlocking `tp_pool_t.lock` while cleaning up after the `pthread_cond_signal()` error |
 | 6      | `tp_pool_t.task_queue` is momentarily full                                                                                 |
 | 7      | `pthread_mutex_unlock()` failed while unlocking the `tp_pool_t.lock`                                                       |
+| 7      | `pthread_mutex_unlock()` failed while unlocking the `tp_pool_t.lock` after task queue is full                              |
 
 ### tp_wait_for_tasks_done
 
