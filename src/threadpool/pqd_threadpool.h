@@ -109,11 +109,7 @@ void* tp_thread_handler(void* threadpool) {
 
     while (1) {
         // lock the pool in order to access the task queue
-        int ret = pthread_mutex_lock(&(pool->lock));
-        if(ret != 0){
-            fprintf(stderr, "THREAD ERROR: mutex lock failed with code %d\n", ret);
-            pthread_exit(NULL);
-        }
+        pthread_mutex_lock(&(pool->lock));
 
         // increment the idle threads
         pool->idle_threads++;
@@ -121,28 +117,17 @@ void* tp_thread_handler(void* threadpool) {
         // all threads are idle and no more task are queued
         if(pool->idle_threads == pool->thread_amount && pool->queued == 0){
             // signal that the threads are idle (all tasks done)
-            ret = pthread_cond_signal(&(pool->done));
-            if(ret != 0){
-                fprintf(stderr, "THREAD ERROR: pthread cond signal done failed with code %d\n", ret);
-                pthread_exit(NULL);
-            }
+            pthread_cond_signal(&(pool->done));
         }
 
         // while there is no task to do, wait for one
         while (pool->queued == 0 && !pool->stop) {
-            ret = pthread_cond_wait(&(pool->notify), &(pool->lock));
-            if(ret != 0){
-                fprintf(stderr, "THREAD ERROR: condition wait failed with code %d\n", ret);
-                pthread_exit(NULL);
-            }
+            pthread_cond_wait(&(pool->notify), &(pool->lock));
         }
 
         // if the thread should stop
         if (pool->stop) {
-            ret = pthread_mutex_unlock(&(pool->lock));
-            if(ret != 0){
-                fprintf(stderr, "THREAD ERROR: mutex unlock failed on stop with code %d\n", ret);
-            }
+            pthread_mutex_unlock(&(pool->lock));
             pthread_exit(NULL);
         }
 
@@ -155,11 +140,7 @@ void* tp_thread_handler(void* threadpool) {
         pool->idle_threads--;
 
         // unlock the mutex, so that other threads can get a task
-        ret = pthread_mutex_unlock(&(pool->lock));
-        if(ret != 0){
-            fprintf(stderr, "THREAD ERROR: mutex unlock failed with code %d\n", ret);
-            pthread_exit(NULL);
-        }
+        pthread_mutex_unlock(&(pool->lock));
         
         // execute the task
         (*(task.function))(task.arg);
@@ -193,79 +174,23 @@ int8_t tp_init(uint16_t thread_amount, uint16_t task_amount, tp_pool_t *pool){
     pool->stop = 0;
 
     // initialize the mutex
-    int ret = pthread_mutex_init(&(pool->lock), NULL);
-    if(ret != 0){
-        fprintf(stderr, "ERROR: pthread mutex init failed with code %d\n", ret);
-        return 3;
-    }
+    pthread_mutex_init(&(pool->lock), NULL);
 
     // initialize the condition
-    ret = pthread_cond_init(&(pool->notify), NULL);
-    if(ret != 0){
-        fprintf(stderr, "ERROR: pthread cond init notify failed with code %d!\n", ret);
-        pthread_mutex_destroy(&(pool->lock));
-        return 4;
-    }
+    pthread_cond_init(&(pool->notify), NULL);
 
     // initialize the condition
-    ret = pthread_cond_init(&(pool->done), NULL);
-    if(ret != 0){
-        fprintf(stderr, "ERROR: pthread cond init done failed with code %d!\n", ret);
-        pthread_mutex_destroy(&(pool->lock));
-        pthread_cond_destroy(&(pool->notify));
-        return 5;
-    }
+    pthread_cond_init(&(pool->done), NULL);
 
     // allocate the memory for the threads
     pool->threads = (pthread_t *)malloc(thread_amount * sizeof(pthread_t));
-    if(pool->threads == NULL){
-        fprintf(stderr, "ERROR: Allocating threads array failed!\n");
-        pthread_mutex_destroy(&(pool->lock));
-        pthread_cond_destroy(&(pool->notify));
-        pthread_cond_destroy(&(pool->done));
-        return 6;
-    }
 
     // allocate the memory for the task queue
     pool->task_queue = (tp_task_t *)malloc(task_amount * sizeof(tp_task_t));
-    if(pool->task_queue == NULL){
-        fprintf(stderr, "ERROR: Allocating task queue failed!\n");
-        free(pool->threads);
-        pool->threads = NULL;
-        pthread_mutex_destroy(&(pool->lock));
-        pthread_cond_destroy(&(pool->notify));
-        pthread_cond_destroy(&(pool->done));
-        return 7;
-    }
 
     // start the threads
     for(uint16_t i = 0; i < thread_amount; i++){
-        ret = pthread_create(&(pool->threads[i]), NULL, tp_thread_handler, pool);
-        if(ret != 0){
-            fprintf(stderr, "ERROR: pthread create failed with code %d\n", ret);
-            // terminate all the threads that have been started if the creation 
-            // of one of them fails
-            pthread_mutex_lock(&(pool->lock));
-            pool->stop = 1;
-            pthread_cond_broadcast(&(pool->notify));
-            pthread_cond_destroy(&(pool->done));
-            pthread_mutex_unlock(&(pool->lock));
-
-            for (uint16_t ii = 0; ii < i; ii++) {
-                pthread_join(pool->threads[ii], NULL);
-            }
-
-            pthread_mutex_destroy(&(pool->lock));
-            pthread_cond_destroy(&(pool->notify));
-
-            free(pool->task_queue);
-            pool->task_queue = NULL;
-            
-            free(pool->threads);
-            pool->threads = NULL;
-
-            return 8;
-        }
+        pthread_create(&(pool->threads[i]), NULL, tp_thread_handler, pool);
     }
 
     return 0;
@@ -280,59 +205,31 @@ int8_t tp_destroy(tp_pool_t* pool) {
     if(pool == NULL) return 1;
 
     // get the mutex for the pool
-    int ret = pthread_mutex_lock(&(pool->lock));
-    if(ret != 0){
-        fprintf(stderr, "ERROR: pthread mutex lock failed with code %d\n", ret);
-        return 2;
-    }
+    pthread_mutex_lock(&(pool->lock));
 
     // set the sopt bit. The threads will stop when
     // this is set.
     pool->stop = 1;
     
     // broadcast the notify to awaken all the waiting threads
-    ret = pthread_cond_broadcast(&(pool->notify));
-    if(ret != 0){
-        fprintf(stderr, "ERROR: pthread cond broadcast failed with code %d\n", ret);
-        return 3;
-    }
+    pthread_cond_broadcast(&(pool->notify));
 
     // unlock the pool again.
-    ret = pthread_mutex_unlock(&(pool->lock));
-    if(ret != 0){
-        fprintf(stderr, "ERROR: pthread mutex unlock failed with code %d\n", ret);
-        return 4;
-    }
+    pthread_mutex_unlock(&(pool->lock));
 
     // wait for all the threads to join
     for (uint16_t i = 0; i < pool->thread_amount; i++) {
-        ret = pthread_join(pool->threads[i], NULL);
-        if(ret != 0){
-            fprintf(stderr, "ERROR: pthread join failed with code %d\n", ret);
-            return 5;
-        }
+        pthread_join(pool->threads[i], NULL);
     }
 
     // destroy the mutex for the pool
-    ret = pthread_mutex_destroy(&(pool->lock));
-    if(ret != 0){
-        fprintf(stderr, "ERROR: pthread mutex destroy failed with code %d\n", ret);
-        return 6;
-    }
+    pthread_mutex_destroy(&(pool->lock));
 
     // destroy the notify condition
-    ret = pthread_cond_destroy(&(pool->notify));
-    if(ret != 0){
-        fprintf(stderr, "ERROR: pthread notify cond destroy failed with code %d\n", ret);
-        return 7;
-    }
+    pthread_cond_destroy(&(pool->notify));
 
     // destroy the notify condition
-    ret = pthread_cond_destroy(&(pool->done));
-    if(ret != 0){
-        fprintf(stderr, "ERROR: pthread done cond destroy failed with code %d\n", ret);
-        return 8;
-    }
+    pthread_cond_destroy(&(pool->done));
 
     // free the allocated memory
     //free(pool->task_queue);
@@ -357,11 +254,7 @@ int8_t tp_add_task(tp_pool_t *pool, void (*function)(void*), void *arg){
         return 2;
     }
 
-    int ret = pthread_mutex_lock(&(pool->lock));
-    if(ret != 0){
-        fprintf(stderr, "ERROR: pthread mutex lock failed with code %d\n", ret);
-        return 3;
-    }
+    pthread_mutex_lock(&(pool->lock));
 
     int next_rear = (pool->queue_back + 1) % pool->task_amount;
     if(pool->queued < pool->task_amount){
@@ -371,35 +264,16 @@ int8_t tp_add_task(tp_pool_t *pool, void (*function)(void*), void *arg){
         pool->queue_back = next_rear;
         pool->queued++;
 
-        ret = pthread_cond_signal(&(pool->notify));
-        if(ret != 0){
-            fprintf(stderr, "ERROR: pthread cond signal failed with code %d\n", ret);
-            // remove the task again
-            pool->queue_back = (pool->queue_back - 1) % pool->task_amount;
-            pool->queued--;
-            ret = pthread_mutex_unlock(&(pool->lock));
-            if(ret != 0){
-                fprintf(stderr, "ERROR: pthread mutex unlock failed with code %d\n", ret);
-                return 5;
-            }
-            return 4;
-        }
+        pthread_cond_signal(&(pool->notify));
+        
     } else {
-        ret = pthread_mutex_unlock(&(pool->lock));
-        if(ret != 0){
-            fprintf(stderr, "ERROR: pthread mutex unlock failed with code %d\n", ret);
-            return 8;
-        }
+        pthread_mutex_unlock(&(pool->lock));
 
         fprintf(stderr, "ERROR: task queue full\n");
         return 6;
     }
 
-    ret = pthread_mutex_unlock(&(pool->lock));
-    if(ret != 0){
-        fprintf(stderr, "ERROR: pthread mutex unlock failed with code %d\n", ret);
-        return 7;
-    }
+    pthread_mutex_unlock(&(pool->lock));
 
     return 0;
 }
@@ -416,41 +290,20 @@ int8_t tp_wait_for_tasks_done(tp_pool_t *pool){
     }
 
     // get the pool mutex
-    int ret = pthread_mutex_lock(&(pool->lock));
-    if(ret != 0){
-        fprintf(stderr, "ERROR: pthread mutex lock failed with code %d\n", ret);
-        return 2;
-    }
+    pthread_mutex_lock(&(pool->lock));
 
     // if all the threads are idle, and no task queued, all task must be done
     if(pool->idle_threads == pool->thread_amount && pool->queued == 0){
         // unlock the mutex
-        ret = pthread_mutex_unlock(&(pool->lock));
-        if(ret != 0){
-            fprintf(stderr, "ERROR: pthread mutex unlock failed with code %d\n", ret);
-            return 4;
-        }
+        pthread_mutex_unlock(&(pool->lock));
         return 0;
     }
 
     // wait for the done cond
-    ret = pthread_cond_wait(&(pool->done), &(pool->lock));
-    if(ret != 0){
-        fprintf(stderr, "ERROR: pthread cond wait failed with code %d\n", ret);
-        ret = pthread_mutex_unlock(&(pool->lock));
-        if(ret != 0){
-            fprintf(stderr, "ERROR: pthread mutex unlock failed with code %d\n", ret);
-            return 5;
-        }
-        return 3;
-    }
+    pthread_cond_wait(&(pool->done), &(pool->lock));
 
     // unlock the mutex
-    ret = pthread_mutex_unlock(&(pool->lock));
-    if(ret != 0){
-        fprintf(stderr, "ERROR: pthread mutex unlock failed with code %d\n", ret);
-        return 4;
-    }
+    pthread_mutex_unlock(&(pool->lock));
 
     return 0;
 }
