@@ -8,11 +8,43 @@
 #ifndef PQD_SERVER_H
 #define PQD_SERVER_H
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <stdbool.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <poll.h>
+
+
+
+#define MAX_CLIENTS 256
+#define PORT 9090
+#define BACKLOG 10
+#define BUFF_SIZE 4096
+
 
 // -----------------------------------------------------------------------------------
 // structure declarations
 // -----------------------------------------------------------------------------------
 
+typedef enum {
+    STATE_NEW,
+    STATE_CONNECTED,
+    STATE_DISCONNECTED,
+    STATE_HELLO,
+    STATE_MSG,
+    STATE_GOODBYE
+} state_e;
+
+
+typedef struct {
+    int fd;
+    state_e state;
+    char buffer[BUFF_SIZE];
+} clientstate_t;
 
 
 
@@ -27,18 +59,47 @@
 // function definition
 // -----------------------------------------------------------------------------------
 
-#ifdef PQD_SERVER_IMPLEMENTATION
-
-
+// #ifdef PQD_SERVER_IMPLEMENTATION
 
 /**
- * \brief poll the connections
- * \param port port to poll on
- * \param dbhdr header of the db file
- * \param employees list of employees
- * \param dbfd file descriptor of the data base
+ * See function declaration
  */
-void poll_loop(unsigned short port, struct dbhdr_t *dbhdr, struct employee_t **employeeptr, int dbfd){
+void init_clients(clientstate_t* states){
+    for(int i = 0; i < MAX_CLIENTS; i++){
+        states[i].fd = -1;
+        states[i].state = STATE_NEW;
+        memset(&states[i].buffer, '\0', BUFF_SIZE);
+    }
+}
+
+/**
+ * See function declaration
+ */
+int find_free_slot(clientstate_t* states){
+    for(int i = 0; i < MAX_CLIENTS; i++){
+        if(states[i].fd == -1){
+            return i;
+        }
+    }
+    return -1;
+}
+
+/**
+ * See function declaration
+ */
+int find_slot_by_fd(clientstate_t* states, int fd){
+    for(int i = 0; i < MAX_CLIENTS; i++){
+        if(states[i].fd == fd){
+            return i;
+        }
+    }
+    return -1;
+}
+
+/**
+ * See function declaration
+ */
+void poll_loop(unsigned short port, clientstate_t *clientStates){
 	int listen_fd, conn_fd, freeSlot;
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_len = sizeof(client_addr);
@@ -73,7 +134,6 @@ void poll_loop(unsigned short port, struct dbhdr_t *dbhdr, struct employee_t **e
     if (listen(listen_fd, BACKLOG) == -1) {
         perror("listen");
         exit(EXIT_FAILURE);
-
     }
 
     printf("Server listening on port %d\n", port);
@@ -144,7 +204,8 @@ void poll_loop(unsigned short port, struct dbhdr_t *dbhdr, struct employee_t **e
                         nfds--;
                     }
                 } else {
-                    handle_client_fsm(dbhdr, employeeptr, &clientStates[slot], dbfd);
+                    // TODO: add handle client stuff
+                    printf("%s",clientStates[slot].buffer);
                 }
             }
         }
@@ -155,5 +216,5 @@ void poll_loop(unsigned short port, struct dbhdr_t *dbhdr, struct employee_t **e
 
 
 
-#endif
+// #endif
 #endif
