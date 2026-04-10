@@ -31,9 +31,9 @@ typedef struct {
 
 // doesn't have to be in order
 User jane = {
-    .name = "Jane"
+    .name = "Jane",
     .id = 557,
-    .age = 34,
+    .age = 34
 }
 ```
 
