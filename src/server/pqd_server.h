@@ -103,6 +103,9 @@ int sv_find_slot_by_fd(sv_clientstate_t* states, int fd, int max_clients){
  * See function declaration
  */
 void sv_server(sv_settings_t settings){
+
+    // TODO: check the settings
+
 	int listen_fd, conn_fd, freeSlot;
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_len = sizeof(client_addr);
