@@ -335,8 +335,8 @@ int8_t tp_destroy(tp_pool_t* pool) {
     }
 
     // free the allocated memory
-    //free(pool->task_queue);
-    //pool->task_queue = NULL;
+    free(pool->task_queue);
+    pool->task_queue = NULL;
     free(pool->threads);
     pool->threads = NULL;
 
