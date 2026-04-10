@@ -5,9 +5,9 @@
 int main(){
 
 
-    clientstate_t clientStates[MAX_CLIENTS];
+    sv_clientstate_t *clientStates = NULL;
 
-    poll_loop(PORT, clientStates);
+    sv_server(PORT, &clientStates);
 
     return 0;
 }

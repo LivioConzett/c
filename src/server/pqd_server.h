@@ -37,15 +37,21 @@ typedef enum {
     STATE_HELLO,
     STATE_MSG,
     STATE_GOODBYE
-} state_e;
+} sv_state_e;
 
 
 typedef struct {
     int fd;
-    state_e state;
+    sv_state_e state;
     char buffer[BUFF_SIZE];
-} clientstate_t;
+} sv_clientstate_t;
 
+
+typedef struct {
+    short port;
+    int max_clients;
+    int buffer_size;
+} sv_settings_t;
 
 
 // -----------------------------------------------------------------------------------
@@ -64,18 +70,20 @@ typedef struct {
 /**
  * See function declaration
  */
-void init_clients(clientstate_t* states){
+void sv_init_clients(sv_clientstate_t **states){
+    *states = malloc(MAX_CLIENTS * sizeof(sv_clientstate_t));
+
     for(int i = 0; i < MAX_CLIENTS; i++){
-        states[i].fd = -1;
-        states[i].state = STATE_NEW;
-        memset(&states[i].buffer, '\0', BUFF_SIZE);
+        (*states)[i].fd = -1;
+        (*states)[i].state = STATE_NEW;
+        memset(&(*states)[i].buffer, '\0', BUFF_SIZE);
     }
 }
 
 /**
  * See function declaration
  */
-int find_free_slot(clientstate_t* states){
+int sv_find_free_slot(sv_clientstate_t* states){
     for(int i = 0; i < MAX_CLIENTS; i++){
         if(states[i].fd == -1){
             return i;
@@ -87,7 +95,7 @@ int find_free_slot(clientstate_t* states){
 /**
  * See function declaration
  */
-int find_slot_by_fd(clientstate_t* states, int fd){
+int sv_find_slot_by_fd(sv_clientstate_t* states, int fd){
     for(int i = 0; i < MAX_CLIENTS; i++){
         if(states[i].fd == fd){
             return i;
@@ -99,7 +107,7 @@ int find_slot_by_fd(clientstate_t* states, int fd){
 /**
  * See function declaration
  */
-void poll_loop(unsigned short port, clientstate_t *clientStates){
+void sv_server(unsigned short port, sv_clientstate_t **clients){
 	int listen_fd, conn_fd, freeSlot;
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_len = sizeof(client_addr);
@@ -108,7 +116,9 @@ void poll_loop(unsigned short port, clientstate_t *clientStates){
     int nfds = 1;
     int opt = 1;
 
-    init_clients(clientStates);
+    sv_init_clients(clients);
+
+    sv_clientstate_t *clientStates = *clients;
 
     listen_fd = socket(AF_INET, SOCK_STREAM, 0);
     if(listen_fd == -1) {
@@ -171,7 +181,7 @@ void poll_loop(unsigned short port, clientstate_t *clientStates){
 
             printf("New connection from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 
-            freeSlot = find_free_slot(clientStates);
+            freeSlot = sv_find_free_slot(clientStates);
             if(freeSlot == -1){
                 printf("server full: closing new connection!\n");
                 close(conn_fd);
@@ -191,7 +201,7 @@ void poll_loop(unsigned short port, clientstate_t *clientStates){
                 n_events--;
 
                 int fd = fds[i].fd;
-                int slot = find_slot_by_fd(clientStates, fd);
+                int slot = sv_find_slot_by_fd(clientStates, fd);
                 ssize_t bytes_read = read(fd, &clientStates[slot].buffer, BUFF_SIZE);
                 if(bytes_read <= 0){
                     close(fd);
