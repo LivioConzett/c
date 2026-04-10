@@ -3,7 +3,7 @@
 #include <unistd.h>
 
 #define PQD_THREADPOOL_IMPLEMENTATION
-#include "pqd_threadpool.h"
+#include "pqd_threadpool_e.h"
 
 
 void print_error(char *msg){
@@ -227,9 +227,9 @@ int main(){
 
     printf("Starting test for threadpool\n");
 
-    //test_tp_init();
-    //test_task_adding();
-    //test_task_done();
+    test_tp_init();
+    test_task_adding();
+    test_task_done();
     test_add_too_many_tasks();
 
     return 0;
