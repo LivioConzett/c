@@ -2,6 +2,9 @@
 
 A library using `pthreads`to create a threadpool.
 
+`pqd_threadpool_e.h` is the library with detailed error handling.  
+`pqd_threadpool.h` is the library with minimal error handling.
+
 ## Usage
 
 To use the library define `PQD_THREADPOOL_IMPLEMENTATION` and

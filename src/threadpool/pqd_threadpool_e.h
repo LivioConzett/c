@@ -1,6 +1,6 @@
 /*
 * A thread pool useing pthreads.
-* Heavily inspired by Lowlevel (https://www.youtube.com/@LowLevelTV)
+* Inspired by Lowlevel (https://www.youtube.com/@LowLevelTV)
 *
 *
 */
