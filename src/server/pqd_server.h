@@ -45,6 +45,7 @@ typedef struct {
     int max_clients;
     int buffer_size;
     int backlog;
+    void (*function)(sv_clientstate_t *client);
 } sv_settings_t;
 
 
@@ -210,7 +211,7 @@ void sv_server(sv_settings_t settings){
                     }
                 } else {
                     // TODO: add handle client stuff
-                    printf("%s", clientStates[slot].buffer);
+                    (*(settings.function))(&clientStates[slot]);
                 }
             }
         }
