@@ -5,7 +5,7 @@ Place where I put my useful C files
 
 ## Tipes for programming C
 
-[CH Tips for C Programming by Nic Barker](https://www.youtube.com/watch?v=9UIIMBqq1D4)
+[Tips for C Programming by Nic Barker](https://www.youtube.com/watch?v=9UIIMBqq1D4)
 
 ### version
 
