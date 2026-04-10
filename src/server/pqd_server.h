@@ -19,10 +19,6 @@
 #include <poll.h>
 
 
-
-#define BACKLOG 10
-
-
 // -----------------------------------------------------------------------------------
 // structure declarations
 // -----------------------------------------------------------------------------------
@@ -48,6 +44,7 @@ typedef struct {
     short port;
     int max_clients;
     int buffer_size;
+    int backlog;
 } sv_settings_t;
 
 
@@ -139,7 +136,7 @@ void sv_server(sv_settings_t settings){
         exit(EXIT_FAILURE);
     }
 
-    if (listen(listen_fd, BACKLOG) == -1) {
+    if (listen(listen_fd, settings.backlog) == -1) {
         perror("listen");
         exit(EXIT_FAILURE);
     }
