@@ -163,7 +163,6 @@ void array_push(int *array, int x){
     header_t *header = (header_t *)array - 1;
     array[header->count++] = x;
 }
-
 ```
 
 ### Index and Pointers
@@ -176,3 +175,29 @@ and resize an array without creating dangling pointers.
 ### Arenas
 
 Use arenas for memory management.
+
+## How do I?
+
+Sometime I forget how to do certain things.
+
+### Function as Parameter
+
+```C
+// function to pass
+void function(void* arg){
+    printf("%s\n", (char*)arg);
+
+}
+
+// function to pass function to
+void run_function(void (*function)(void *arg), void *arg){
+    // run the function
+    (*function)(arg);
+}
+
+// main
+int main(){
+
+    run_function(function, "hello");
+}
+```
